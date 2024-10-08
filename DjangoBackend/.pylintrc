@@ -1,0 +1,12 @@
+[MASTER]
+ignore=venv
+ignore-patterns=test_.*.py
+
+[MESSAGES CONTROL]
+disable=C0114,C0115,C0116,C0411,R0801
+
+[TYPECHECK]
+ignored-modules=firebase_admin
+
+[FORMAT]
+max-line-length=120

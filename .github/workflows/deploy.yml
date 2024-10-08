@@ -1,0 +1,45 @@
+---
+name: Django CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read  # Read access to repository contents
+  actions: write   # Write access to workflows
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.12'
+
+      - name: Deploy to EC2
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          
+          # Save SSH key to a temporary file
+          echo "${{ secrets.EC2_SSH_KEY }}" > ec2_key.pem
+          chmod 600 ec2_key.pem
+          
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem \
+            ${{ secrets.USERNAME }}@${{ secrets.HOST_DNS }} <<EOF
+            cd /home/ubuntu/myfitnessbuddy/MyFitnessBuddy
+            git pull origin main
+            cd DjangoBackend
+            source venv/bin/activate
+            pip install -r requirements.txt
+            python manage.py migrate
+            sudo systemctl restart gunicorn
+            sudo systemctl restart nginx
+          EOF
